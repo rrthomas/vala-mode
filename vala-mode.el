@@ -340,8 +340,9 @@
 ;;		  ;; irrelevant menu alternatives.
 ;;		  (cons "Vala" (c-lang-const c-mode-menu vala)))
 
-;;; Autoload mode trigger
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vala$" . vala-mode))
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vapi$" . vala-mode))
 
 ;; Custom variables
