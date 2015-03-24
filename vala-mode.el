@@ -48,6 +48,7 @@
 
 ;; This is a copy of the function in cc-mode which is used to handle
 ;; the eval-when-compile which is needed during other times.
+(require 'cc-defs)
 (defun c-filter-ops (ops opgroup-filter op-filter &optional xlate)
   ;; See cc-langs.el, a direct copy.
   (unless (listp (car-safe ops))
