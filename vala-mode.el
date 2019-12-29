@@ -84,6 +84,8 @@
 ;; This inserts the bulk of the code.
 (require 'cc-mode)
 
+(require 'imenu)
+
 ;; These are only required at compile time to get the sources for the
 ;; language constants.  (The cc-fonts require and the font-lock
 ;; related constants could additionally be put inside an
@@ -352,6 +354,10 @@
   :type 'hook
   :group 'c)
 
+(defcustom vala-want-imenu t
+  "*Whether to generate a buffer index via imenu for Vala buffers."
+  :type 'boolean :group 'vala)
+
 ;;; The entry point into the mode
 ;;;###autoload
 (defun vala-mode ()
@@ -393,7 +399,381 @@ Key bindings:
   (c-toggle-hungry-state -1)
   (run-hooks 'c-mode-common-hook)
   (run-hooks 'vala-mode-hook)
-  (c-update-modeline))
+  (c-update-modeline)
+
+  ;; maybe do imenu scan after hook returns
+  (when vala-want-imenu
+    (vala--setup-imenu)))
+
+
+; ==================================================================
+;;; imenu stuff (based on csharp-mode.el)
+
+(defconst vala--imenu-expression
+  (let* ((single-space                   "[ \t\n\r\f\v]")
+         (optional-space                 (concat single-space "*"))
+         (bol                            "^[ \t]*") ;; BOL shouldn't accept lineshift.
+         (space                          (concat single-space "+"))
+         (access-modifier (regexp-opt '( "public" "private" "protected" "internal"
+                                         "static" "override" "virtual"
+                                         "abstract" "async" "new")))
+         ;; this will allow syntactically invalid combinations of modifiers
+         ;; but that's a compiler problem, not a imenu-problem
+         (access-modifier-list           (concat "\\(?:" access-modifier space "\\)"))
+         (access-modifiers (concat access-modifier-list "*"))
+         (basic-type                     (concat
+                                          ;; typename
+                                          "\\(?:[A-Za-z_][[:alnum:]_]*\\.\\)*"
+                                          "[A-Za-z_][[:alnum:]_]*"
+                                          ))
+         (type                           (concat
+                                          basic-type
+                                          ;; simplified, optional generic constraint.
+                                          ;; handles generic sub-types.
+                                          "\\(?:<[[:alnum:],<> \t\n\f\v\r]+>\\)?"))
+         (return-type                    (concat
+                                          type
+                                          ;; optional array-specifier
+                                          "\\(?:\\[\\]\\)?"))
+         (interface-prefix               (concat "\\(?:" type "\\.\\)"))
+         ;; param-list with parens
+         (parameter-list "\\(?:\([^!\)]*\)\\)")
+         (inheritance-clause (concat "\\(?:"
+                                     optional-space
+                                     ":"
+                                     optional-space type
+                                     "\\(?:" optional-space "," optional-space type "\\)*"
+                                     "\\)?")))
+
+    (list (list "namespace"
+                (concat bol "namespace" space
+                        "\\(" basic-type "\\)") 1)
+          ;; not all these are classes, but they can hold other
+          ;; members, so they are treated uniformly.
+          (list "class"
+                (concat bol
+                        access-modifiers
+                        "\\("
+                        (regexp-opt '("class" "struct" "interface")) space
+                        type inheritance-clause "\\)")  1)
+          (list "enum"
+                (concat bol
+                        access-modifiers
+                        "\\(" "enum" space
+                        basic-type "\\)")  1)
+          (list "ctor"
+                (concat bol
+                        ;; ctor MUST have access modifiers, or else we pick
+                        ;; every if statement in the file...
+                        access-modifier-list "+"
+                        "\\("
+                        basic-type
+                        optional-space
+                        parameter-list
+                        "\\)"
+                        "\\(?:"
+                        optional-space
+                        ":"
+                        optional-space
+                        "\\(?:this\\|base\\)"
+                        optional-space
+                        parameter-list
+                        "\\)?"
+                        optional-space "{") 1)
+          (list "method"
+                (concat bol
+                        ;; we MUST require modifiers, or else we cannot reliably
+                        ;; identify declarations, without also dragging in lots of
+                        ;; if statements and what not.
+                        access-modifier-list "+"
+                        return-type space
+                        "\\("
+                        type
+                        optional-space
+                        parameter-list
+                        "\\)"
+                        ;; optional // or /* comment at end
+                        "\\(?:[ \t]*/[/*].*\\)?"
+                        optional-space
+                        "{") 1)
+          (list "method-inf"
+                (concat bol
+                        return-type space
+                        "\\("
+                        interface-prefix
+                        type
+                        optional-space
+                        parameter-list
+                        "\\)"
+                        ;; optional // or /* comment at end
+                        "\\(?:[ \t]*/[/*].*\\)?"
+                        optional-space
+                        "{") 1)
+          (list "method-abs-ext"
+                (concat bol
+                        access-modifier-list "+"
+                        (regexp-opt '("extern" "abstract")) space
+                        return-type space
+                        "\\("
+                        type
+                        optional-space
+                        parameter-list
+                        "\\)"
+                        optional-space
+                        ;; abstract/extern methods are terminated with ;
+                        ";") 1)
+          ;; delegates are almost like abstract methods, so pick them up here
+          (list "delegate"
+                (concat bol
+                        access-modifiers
+                        "delegate" space
+                        return-type space
+                        "\\("
+                        type
+                        "\\)"
+                        optional-space
+                        parameter-list
+                        ;; optional // or /* comment at end
+                        optional-space
+                        ";") 1)
+          (list "prop"
+                (concat bol
+                        ;; must require access modifiers, or else we
+                        ;; pick up pretty much anything.
+                        access-modifiers
+                        return-type space
+                        "\\("
+                        type
+                        "\\)"
+                        optional-space "{" optional-space
+                        ;; unless we are super-specific and expect the accessors,
+                        ;; lots of weird things gets slurped into the name.
+                        ;; including the accessors themselves.
+                        (regexp-opt '("get" "set"))
+                        ) 1)
+          (list "prop-inf"
+                (concat bol
+                        return-type space
+                        "\\("
+                        interface-prefix
+                        type
+                        "\\)"
+                        optional-space "{" optional-space
+                        ;; unless we are super-specific and expect the accessors,
+                        ;; lots of weird things gets slurped into the name.
+                        ;; including the accessors themselves.
+                        (regexp-opt '("get" "set"))
+                        ) 1)
+          ;; adding fields... too much?
+          (list "field"
+                (concat bol
+                        access-modifier-list "+"
+                        ;; fields can be readonly/const/volatile
+                        "\\(?:" (regexp-opt '("readonly" "const" "volatile")) space "\\)?"
+                        return-type space
+                        "\\("
+                        type
+                        "\\)"
+                        optional-space
+                        ;; optional assignment
+                        "\\(?:=[^;]+\\)?"
+                        ";") 1)
+          (list "indexer"
+                (concat bol
+                        access-modifiers
+                        return-type space
+                        "this" optional-space
+                        "\\("
+                        ;; opening bracket
+                        "\\[" optional-space
+                        ;; type
+                        "\\([^\]]+\\)" optional-space
+                        type
+                        ;; closing brackets
+                        "\\]"
+                        "\\)"
+                        optional-space "{" optional-space
+                        ;; unless we are super-specific and expect the accessors,
+                        ;; lots of weird things gets slurped into the name.
+                        ;; including the accessors themselves.
+                        (regexp-opt '("get" "set"))) 1))))
+
+(defun vala--imenu-get-pos (pair)
+  "Return `position' from a (title . position) cons-pair `PAIR'.
+   The position may be a integer, or a marker (as returned by
+   imenu-indexing).  This function ensures what is returned is an
+   integer which can be used for easy comparison."
+  (let ((pos (cdr pair)))
+    (if (markerp pos)
+        (marker-position pos)
+      pos)))
+
+(defun vala--imenu-get-container (item containers previous)
+  "Return the container which `ITEM' belongs to.
+   `ITEM' is a (title . position) cons-pair.  `CONTAINERS' is a
+   list of such.  `PREVIOUS' is the name of the previous
+   container found when recursing through `CONTAINERS'.
+   The final result is based on item's position relative to those
+   found in `CONTAINERS', or nil if none is found."
+  (if (not containers)
+      previous
+    (let* ((item-pos (vala--imenu-get-pos item))
+           (container (car containers))
+           (container-pos (vala--imenu-get-pos container))
+           (rest      (cdr containers)))
+      (if (and container-pos
+               (< item-pos container-pos))
+          previous
+        (vala--imenu-get-container item rest container)))))
+
+(defun vala--imenu-get-container-name (item containers)
+  "Return the name of the container which `ITEM' belongs to.
+   `ITEM' is a (title . position) cons-pair.
+   `CONTAINERS' is a list of such.
+   The name is based on the results from
+   `vala--imenu-get-container'."
+  (let ((container (vala--imenu-get-container item containers nil)))
+    (if (not container)
+        nil
+      (let ((container-p1 (car (split-string (car container))))   ;; namespace
+            (container-p2 (cadr (split-string (car container))))) ;; class/interface
+        ;; use p1 (namespace) when there is no p2
+        (if container-p2
+            container-p2
+          container-p1)))))
+
+(defun vala--imenu-sort (items)
+  "Sort an imenu-index list `ITEMS' by the string-portion."
+  (sort items (lambda (item1 item2)
+                (string< (car item1) (car item2)))))
+
+(defun vala--imenu-get-class-name (class namespaces)
+  "Gets a name for a imenu-index `CLASS'.
+   Result is based on its own name and `NAMESPACES' found in the same file."
+  (let ((namespace (vala--imenu-get-container-name class namespaces))
+        (class-name (car class)))
+    (if (not namespace)
+        class-name
+      ;; reformat to include namespace
+      (let* ((words (split-string class-name))
+             (type  (car words))
+             (name  (cadr words)))
+        (concat type " " namespace "." name)))))
+
+(defun vala--imenu-get-class-nodes (classes namespaces)
+  "Create a new alist with CLASSES as root nodes with NAMESPACES added.
+   Each class will have one imenu index-entry \"( top)\" added by
+   default."
+
+  (mapcar (lambda (class)
+            (let ((class-name (vala--imenu-get-class-name class namespaces))
+                  (class-pos  (cdr class)))
+              ;; construct a new alist-entry where value is itself
+              ;; a list of alist-entries with -1- entry which the top
+              ;; of the class itself.
+              (cons class-name
+                    (list
+                     (cons "( top )" class-pos)))))
+          classes))
+
+(defun vala--imenu-get-class-node (result item classes namespaces)
+  "Get the class-node in `RESULT' which an `ITEM' should be inserted into.
+   For this calculation, the original index items `CLASSES' and `NAMESPACES'
+   is needed."
+  (let* ((class-item (vala--imenu-get-container item classes nil))
+         (class-name (vala--imenu-get-class-name class-item namespaces)))
+    (assoc class-name result)))
+
+(defun vala--imenu-format-item-node (item type)
+  "Format an ITEM with a specified TYPE as an imenu item to be inserted into the index."
+  (cons
+   (concat "(" type ") " (car item))
+   (cdr item)))
+
+(defun vala--imenu-append-items-to-menu (result key name index classes namespaces)
+  "Formats the imenu-index using the provided values.
+This is done by modifying the contents of `RESULT' in place."
+  ;; items = all methods, all events, etc based on "type"
+  (let* ((items (cdr (assoc key index))))
+    (dolist (item items)
+      (let ((class-node (vala--imenu-get-class-node result item classes namespaces))
+            (item-node  (vala--imenu-format-item-node item name)))
+        (nconc class-node (list item-node))))))
+
+(defun vala--imenu-transform-index (index)
+  "Transform an imenu INDEX based on `IMENU-GENERIC-EXPRESSION'.
+  The resulting structure should be based on full type-names, with
+  type-members nested hierarchially below its parent."
+  (let* ((result nil)
+         (namespaces (cdr (assoc "namespace" index)))
+         (classes    (cdr (assoc "class"     index)))
+         (class-nodes (vala--imenu-get-class-nodes classes namespaces)))
+    ;; be explicit about collection variable
+    (setq result class-nodes)
+    (dolist (type '(("ctor")
+                    ("method")
+                    ("method-inf" "method")
+                    ("method-abs-ext" "method")
+                    ("prop")
+                    ("prop-inf" "prop")
+                    ("field")
+                    ("indexer")))
+      (let* ((key (car type))
+             (name (car (last type))))
+        (vala--imenu-append-items-to-menu result key name index classes namespaces)))
+
+    ;; add enums and delegates to main result list, as own items.
+    ;; We don't support nested types. EOS.
+    ;;
+    ;; This has the issue that they get reported as "function" in
+    ;; `helm-imenu', but there's nothing we can do about that.
+    ;; The alternative is making it a menu with -1- submenu which
+    ;; says "( top )" but that will be very clicky...
+
+    ;; before adding delegates, we need to pad the entry so that it
+    ;; matches the "<type> <name>" signature used by all the other
+    ;; imenu entries
+    (let ((delegates (cdr (assoc "delegate" index))))
+      (dolist (delegate delegates)
+        (setf (car delegate) (concat "delegate " (car delegate)))))
+
+    (dolist (type '("enum" "delegate"))
+      (dolist (item (cdr (assoc type index)))
+        (let ((item-name (vala--imenu-get-class-name item namespaces)))
+          (setq result (cons (cons item-name (cdr item))
+                             result)))))
+
+    ;; sort individual sub-lists
+    (dolist (item result)
+      (when (listp (cdr item))
+        (setf (cdr item) (vala--imenu-sort (cdr item)))))
+
+    ;; sort main list
+    ;; (Enums always sort last though, because they don't have
+    ;; sub-menus)
+    (vala--imenu-sort result)))
+
+(defun vala--imenu-create-index-function ()
+  "Create an imenu index."
+  (vala--imenu-transform-index
+   (imenu--generic-function vala--imenu-expression)))
+
+(defun vala--setup-imenu ()
+  "Set up `imenu' for `vala-mode'."
+
+  ;; There are two ways to do imenu indexing. One is to provide a
+  ;; function, via `imenu-create-index-function'.  The other is to
+  ;; provide imenu with a list of regexps via
+  ;; `imenu-generic-expression'; imenu will do a "generic scan" for you.
+  ;;
+  ;; We use both.
+  ;;
+  ;; First we use the `imenu-generic-expression' to build a index for
+  ;; us, but we do so inside a `imenu-create-index-function'
+  ;; implementation which allows us to tweak the results slightly
+  ;; before returning it to Emacs.
+  (setq imenu-create-index-function #'vala--imenu-create-index-function)
+  (imenu-add-menubar-index))
 
 (provide 'vala-mode)
 
