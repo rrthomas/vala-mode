@@ -134,7 +134,7 @@
 	   ;; Match a char before the string starter to make
 	   ;; `c-skip-comments-and-strings' work correctly.
 	   (concat ".\\(" c-string-limit-regexp "\\)")
-	   '((c-font-lock-invalid-string)))
+	   `(,(if (fboundp 'c-font-lock-invalid-string) '(c-font-lock-invalid-string))))
 	   
 	 ;; Fontify keyword constants.
 	 ,@(when (c-lang-const c-constant-kwds)
