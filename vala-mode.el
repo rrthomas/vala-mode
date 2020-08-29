@@ -190,6 +190,10 @@
 			       "\\)")
 		       "\\)*")))
 
+;; Vala type may be marked nullable and/or be array type
+(c-lang-defconst c-opt-type-suffix-key
+  vala "\\(\\[[ \t\n\r\f\v]*\\]\\|\\?\\)")
+
 ;; Vala has a few rules that are slightly different than Java for
 ;; operators. This also removed the Java's "super" and replaces it
 ;; with the Vala's "base".
