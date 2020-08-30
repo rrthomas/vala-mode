@@ -221,10 +221,14 @@
 (c-lang-defconst c-type-prefix-kwds
   vala '("class" "interface" "struct" "enum" "signal"))
 
+;; Type modifier keywords which can appear in front of a type.
+(c-lang-defconst c-type-modifier-prefix-kwds
+  vala '("const"))
+
 ;; Type modifier keywords. They appear anywhere in types, but modifiy
 ;; instead create one.
 (c-lang-defconst c-type-modifier-kwds
-  vala '("const"))
+  vala nil)
 
 ;; Structures that are similiar to classes.
 (c-lang-defconst c-class-decl-kwds
