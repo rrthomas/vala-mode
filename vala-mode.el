@@ -192,7 +192,7 @@
 
 ;; Vala type may be marked nullable and/or be array type
 (c-lang-defconst c-opt-type-suffix-key
-  vala "\\(\\[[ \t\n\r\f\v]*\\]\\|\\?\\)")
+  vala "\\(\\[[ \t\n\r\f\v]*\\]\\|[?*]\\)")
 
 ;; Vala has a few rules that are slightly different than Java for
 ;; operators. This also removed the Java's "super" and replaces it
@@ -221,10 +221,14 @@
 (c-lang-defconst c-type-prefix-kwds
   vala '("class" "interface" "struct" "enum" "signal"))
 
+;; Type modifier keywords which can appear in front of a type.
+(c-lang-defconst c-type-modifier-prefix-kwds
+  vala '("const"))
+
 ;; Type modifier keywords. They appear anywhere in types, but modifiy
 ;; instead create one.
 (c-lang-defconst c-type-modifier-kwds
-  vala '("const"))
+  vala nil)
 
 ;; Structures that are similiar to classes.
 (c-lang-defconst c-class-decl-kwds
