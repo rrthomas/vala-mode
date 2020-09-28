@@ -350,9 +350,9 @@
 ;;		  (cons "Vala" (c-lang-const c-mode-menu vala)))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.vala$" . vala-mode))
+(add-to-list 'auto-mode-alist '("\\.vala\\'" . vala-mode))
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.vapi$" . vala-mode))
+(add-to-list 'auto-mode-alist '("\\.vapi\\'" . vala-mode))
 ;;;###autoload
 (unless (assoc 'vala-mode c-default-style)
   (add-to-list 'c-default-style '(vala-mode . "linux")))
