@@ -353,6 +353,9 @@
 (add-to-list 'auto-mode-alist '("\\.vala$" . vala-mode))
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vapi$" . vala-mode))
+;;;###autoload
+(unless (assoc 'vala-mode c-default-style)
+  (add-to-list 'c-default-style '(vala-mode . "linux")))
 
 ;; Custom variables
 (defcustom vala-mode-hook nil
@@ -393,7 +396,6 @@ Key bindings:
   ;; analysis and similar things working.
   (c-common-init 'vala-mode)
   ;;(easy-menu-add vala-menu)
-  (c-set-style "linux")
   (setq indent-tabs-mode t)
   (setq c-basic-offset 4)
   (setq tab-width 4)
