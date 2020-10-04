@@ -290,10 +290,32 @@
 (c-lang-defconst c-other-kwds
   vala '("in" "sizeof" "typeof"))
 
-(require 'cc-awk)
+;; Add a "virtual semicolon" after attributes, so that indentation
+;; afterwards is not broken. Copied from
+;; https://github.com/josteink/csharp-mode/ commit bd881cd
+(defun csharp-at-vsemi-p (&optional pos)
+  (if pos (goto-char pos))
+  (or (and
+       ;; Heuristics to find attributes
+       (eq (char-before) ?\])
+       (save-excursion
+         (c-backward-sexp)
+         (looking-at "\\[")))
+      (and
+       ;; Heuristics to find object initializers
+       (save-excursion
+         ;; Next non-whitespace character should be '{'
+         (c-forward-syntactic-ws)
+         (char-after ?{))
+       (save-excursion
+         ;; 'new' should be part of the line
+         (beginning-of-line)
+         (looking-at ".*new.*"))
+       ;; Line should not already be terminated
+       (not (eq (char-after) ?\;)))))
 
 (c-lang-defconst c-at-vsemi-p-fn
-  vala 'c-awk-at-vsemi-p)
+  vala 'csharp-at-vsemi-p)
 
 
 ;; (defcustom vala-font-lock-extra-types nil
