@@ -36,11 +36,6 @@
 ;;    Note: The interface used in this file requires CC Mode 5.30 or
 ;;    later.
 
-;;; .emacs (don't put in (require 'vala-mode))
-;; (autoload 'vala-mode "vala-mode" "Major mode for editing Vala code." t)
-;; (setq auto-mode-alist
-;;    (append '(("\\.vala$" . vala-mode)) auto-mode-alist))
-
 ;;; Versions:
 ;;
 ;;	0.1	: Initial version based on csharp-mode
@@ -66,7 +61,7 @@
   (unless xlate
     (setq xlate 'identity))
   (c-with-syntax-table (c-lang-const c-mode-syntax-table)
-    (delete-duplicates
+    (cl-delete-duplicates
      (mapcan (lambda (opgroup)
 	       (when (if (symbolp (car opgroup))
 			 (when (funcall opgroup-filter (car opgroup))
@@ -249,10 +244,10 @@
 ;; Define the keywords that can have something following after them.
 (c-lang-defconst c-type-list-kwds
   vala '("struct" "class" "interface" "is" "as"
-	 "delegate" "event" "set" "get" "add" "remove"
+	 "delegate" "event" "set" "get"
 	 "callback" "signal" "var" "default"))
 
-;; This allows the classes after the : in the class declartion to be
+;; This allows the classes after the : in the class declaration to be
 ;; fontified. 
 (c-lang-defconst c-typeless-decl-kwds
   vala '(":"))
