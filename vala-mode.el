@@ -36,11 +36,6 @@
 ;;    Note: The interface used in this file requires CC Mode 5.30 or
 ;;    later.
 
-;;; Versions:
-;;
-;;	0.1	: Initial version based on csharp-mode
-;;
-
 ;; This is a copy of the function in cc-mode which is used to handle
 ;; the eval-when-compile which is needed during other times.
 (require 'cc-defs)
