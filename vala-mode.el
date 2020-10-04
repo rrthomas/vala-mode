@@ -247,7 +247,7 @@
 	 "delegate" "event" "set" "get"
 	 "callback" "signal" "var" "default"))
 
-;; This allows the classes after the : in the class declartion to be
+;; This allows the classes after the : in the class declaration to be
 ;; fontified. 
 (c-lang-defconst c-typeless-decl-kwds
   vala '(":"))
