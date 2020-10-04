@@ -61,7 +61,7 @@
   (unless xlate
     (setq xlate 'identity))
   (c-with-syntax-table (c-lang-const c-mode-syntax-table)
-    (delete-duplicates
+    (cl-delete-duplicates
      (mapcan (lambda (opgroup)
 	       (when (if (symbolp (car opgroup))
 			 (when (funcall opgroup-filter (car opgroup))
