@@ -36,11 +36,6 @@
 ;;    Note: The interface used in this file requires CC Mode 5.30 or
 ;;    later.
 
-;;; .emacs (don't put in (require 'vala-mode))
-;; (autoload 'vala-mode "vala-mode" "Major mode for editing Vala code." t)
-;; (setq auto-mode-alist
-;;    (append '(("\\.vala$" . vala-mode)) auto-mode-alist))
-
 ;;; Versions:
 ;;
 ;;	0.1	: Initial version based on csharp-mode
