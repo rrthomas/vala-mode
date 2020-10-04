@@ -255,6 +255,10 @@
 (c-lang-defconst c-ref-list-kwds
   vala '("using" "namespace" "construct"))
 
+;; Keywords followed by a paren not containing type identifiers.
+(c-lang-defconst c-paren-nontype-kwds
+  vala '("requires" "ensuring"))
+
 ;; Follow-on blocks that don't require a brace
 (c-lang-defconst c-block-stmt-2-kwds
   vala '("for" "if" "switch" "while" "catch" "foreach" "lock"))
@@ -273,7 +277,7 @@
 
 ;; Keywords that start "primary expressions."
 (c-lang-defconst c-primary-expr-kwds
-  vala '("this" "base"))
+  vala '("this" "base" "result"))
 
 ;; We need to treat namespace as an outer block to class indenting
 ;; works properly.
@@ -367,8 +371,14 @@
 ;;;###autoload
 (require 'cc-vars)
 ;;;###autoload
+(c-add-style "vala"
+             '("linux"
+               (c-comment-only-line-offset 0 . 0)
+               (c-offsets-alist
+                (func-decl-cont . ++))))
+;;;###autoload
 (unless (assoc 'vala-mode c-default-style)
-  (add-to-list 'c-default-style '(vala-mode . "linux")))
+  (add-to-list 'c-default-style '(vala-mode . "vala")))
 
 ;; Custom variables
 (defcustom vala-mode-hook nil
