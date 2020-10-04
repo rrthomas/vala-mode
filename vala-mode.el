@@ -264,7 +264,6 @@
   vala '("return" "continue" "break" "throw"))
 
 ;; Statements that allow a label
-;; TODO?
 (c-lang-defconst c-before-label-kwds
   vala nil)
 
