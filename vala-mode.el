@@ -349,6 +349,8 @@
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vapi\\'" . vala-mode))
 ;;;###autoload
+(require 'cc-vars)
+;;;###autoload
 (unless (assoc 'vala-mode c-default-style)
   (add-to-list 'c-default-style '(vala-mode . "linux")))
 
