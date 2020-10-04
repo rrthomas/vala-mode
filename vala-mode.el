@@ -249,7 +249,7 @@
 ;; Define the keywords that can have something following after them.
 (c-lang-defconst c-type-list-kwds
   vala '("struct" "class" "interface" "is" "as"
-	 "delegate" "event" "set" "get" "add" "remove"
+	 "delegate" "event" "set" "get"
 	 "callback" "signal" "var" "default"))
 
 ;; This allows the classes after the : in the class declartion to be
