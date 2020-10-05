@@ -290,10 +290,13 @@ casts and declarations are fontified.  Used on level 2 and higher."
 
 ;; The various modifiers used for class and method descriptions.
 (c-lang-defconst c-modifier-kwds
-  vala '("public" "partial" "private" "const" "abstract"
-	 "protected" "ref" "in" "out" "static" "virtual"
-	 "override" "params" "internal" "weak" "owned"
-	 "unowned" "async" "yield"))
+  vala '("public" "private" "const" "abstract"
+	 "protected" "static" "virtual"
+	 "override" "params" "internal" "async" "yield"))
+
+;; Type modifiers that can be used other than in declarations.
+(c-lang-defconst c-type-modifier-prefix-kwds
+  vala '("ref" "in" "out" "weak" "owned" "unowned"))
 
 ;; We don't use the protection level stuff because it breaks the
 ;; method indenting. Not sure why, though.
