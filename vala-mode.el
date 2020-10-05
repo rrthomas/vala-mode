@@ -365,9 +365,7 @@
 ;;;###autoload
 (defun vala-mode ()
   "Major mode for editing Vala code.
-This is a simple example of a separate mode derived from CC Mode
-to support a language with syntax similar to
-C#/C/C++/ObjC/Java/IDL/Pike.
+Based on CC Mode.
 
 The hook `c-mode-common-hook' is run with no args at mode
 initialization, then `vala-mode-hook'.
