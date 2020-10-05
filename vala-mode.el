@@ -369,16 +369,11 @@
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vapi\\'" . vala-mode))
 ;;;###autoload
-(require 'cc-vars)
-;;;###autoload
 (c-add-style "vala"
              '("linux"
                (c-comment-only-line-offset 0 . 0)
                (c-offsets-alist
                 (func-decl-cont . ++))))
-;;;###autoload
-(unless (assoc 'vala-mode c-default-style)
-  (add-to-list 'c-default-style '(vala-mode . "vala")))
 
 ;; Custom variables
 (defcustom vala-mode-hook nil
@@ -418,6 +413,8 @@ Key bindings:
   ;; only makes the necessary initialization to get the syntactic
   ;; analysis and similar things working.
   (c-common-init 'vala-mode)
+  (unless (assoc 'vala-mode c-default-style)
+    (add-to-list 'c-default-style '(vala-mode . "vala")))
   ;;(easy-menu-add vala-menu)
   (setq indent-tabs-mode t)
   (setq c-basic-offset 4)
