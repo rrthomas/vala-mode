@@ -90,96 +90,174 @@
   ;; constants are evaluated then.
   (c-add-language 'vala-mode 'java-mode))
 
-;; Java uses a series of regexes to change the font-lock for class
-;; references. The problem comes in because Java uses Pascal (leading
-;; space in names, SomeClass) for class and package names, but
-;; Camel-casing (initial lowercase, upper case in words,
-;; i.e. someVariable) for variables.
-(c-lang-defconst c-opt-after-id-concat-key
-  vala (if (c-lang-const c-opt-identifier-concat-key)
-	   (c-lang-const c-symbol-start)))
+(c-lang-defconst c-identifier-ops
+  ;; Vala has "." to concatenate identifiers but it's also used for
+  ;; normal indexing.  There's special code in the Vala font lock
+  ;; rules to fontify qualified identifiers based on the standard
+  ;; naming conventions.  We still define "." here to make
+  ;; `c-forward-name' move over as long names as possible which is
+  ;; necessary to e.g. handle throws clauses correctly.
+  vala '((left-assoc ".")))
 
+;; This is a verbatim copy of the value from CC Mode 5.33.1 with "Java"
+;; changed to "Vala", so it can be easily diffed again in future.
 (c-lang-defconst c-basic-matchers-before
-  vala `(
-	 ;; Put a warning face on the opener of unclosed strings that can't
-	 ;; span lines. Later font lock packages have a
-	 ;; `font-lock-syntactic-face-function' for this, but it doesn't
-	 ;; give the control we want since any fontification done inside the
-	 ;; function will be unconditionally overridden.
-	 ,(c-make-font-lock-search-function
-	   ;; Match a char before the string starter to make
-	   ;; `c-skip-comments-and-strings' work correctly.
-	   (concat ".\\(" c-string-limit-regexp "\\)")
-	   `(,(if (fboundp 'c-font-lock-invalid-string) '(c-font-lock-invalid-string))))
-	   
-	 ;; Fontify keyword constants.
-	 ,@(when (c-lang-const c-constant-kwds)
-	     (let ((re (c-make-keywords-re nil
-			 (c-lang-const c-constant-kwds))))
-	       `((eval . (list ,(concat "\\<\\(" re "\\)\\>")
-			       1 c-constant-face-name)))))
-	   
-	 ;; Fontify all keywords except the primitive types.
-	 ,`(,(concat "\\<" (c-lang-const c-regular-keywords-regexp))
-	    1 font-lock-keyword-face)
+  "Font lock matchers for basic keywords, labels, references and various
+other easily recognizable things that should be fontified before generic
+casts and declarations are fontified.  Used on level 2 and higher."
 
-	 ;; Fontify leading identifiers in fully
-	 ;; qualified names like "Foo.Bar".
-	 ,@(when (c-lang-const c-opt-identifier-concat-key)
-	     `((,(byte-compile
-		  `(lambda (limit)
-		     (while (re-search-forward
-			     ,(concat "\\(\\<" ; 1
-				      "\\(" (c-lang-const c-symbol-key)
-				      "\\)" ; 2
-				      "[ \t\n\r\f\v]*"
-				      (c-lang-const
-				       c-opt-identifier-concat-key)
-				      "[ \t\n\r\f\v]*"
-				      "\\)"
-				      "\\("
-				      (c-lang-const
-				       c-opt-after-id-concat-key)
-				      "\\)")
-			     limit t)
-		       (unless (progn
-				 (goto-char (match-beginning 0))
-				 (c-skip-comments-and-strings limit))
-			 (or (get-text-property (match-beginning 2) 'face)
-			     (c-put-font-lock-face (match-beginning 2)
-						   (match-end 2)
-						   c-reference-face-name))
-			 (goto-char (match-end 1)))))))))
-	 ))
+  ;; Note: `c-font-lock-declarations' assumes that no matcher here
+  ;; sets `font-lock-type-face' in languages where
+  ;; `c-recognize-<>-arglists' is set.
 
-;; Vala does not allow a leading qualifier operator. It also doesn't
-;; allow the ".*" construct of Java. So, we redo this regex without
-;; the "\\|\\*" regex.
-(c-lang-defconst c-identifier-key
-  vala (concat "\\(" (c-lang-const c-symbol-key) "\\)" ; 1
-	       (concat "\\("
-		       "[ \t\n\r\f\v]*"
-		       (c-lang-const c-opt-identifier-concat-key)
-		       "[ \t\n\r\f\v]*"
-		       (concat "\\("
-			       "\\(" (c-lang-const c-symbol-key) "\\)"
-			       "\\)")
-		       "\\)*")))
+  t `(;; Put a warning face on the opener of unclosed strings that
+      ;; can't span lines and on the "terminating" newlines.  Later font
+      ;; lock packages have a `font-lock-syntactic-face-function' for
+      ;; this, but it doesn't give the control we want since any
+      ;; fontification done inside the function will be
+      ;; unconditionally overridden.
+      ("\\s|" 0 font-lock-warning-face t nil)
+
+      ;; Invalid single quotes.
+      c-font-lock-invalid-single-quotes
+
+      ;; Fontify C++ raw strings.
+      ,@(when (c-major-mode-is 'c++-mode)
+	  '(c-font-lock-raw-strings))
+
+      ;; Fontify keyword constants.
+      ,@(when (c-lang-const c-constant-kwds)
+	  (let ((re (c-make-keywords-re nil (c-lang-const c-constant-kwds))))
+	    (if (c-major-mode-is 'pike-mode)
+		;; No symbol is a keyword after "->" in Pike.
+		`((eval . (list ,(concat "\\(\\=.?\\|[^>]\\|[^-]>\\)"
+					 "\\<\\(" re "\\)\\>")
+				2 c-constant-face-name)))
+	      `((eval . (list ,(concat "\\<\\(" re "\\)\\>")
+			      1 c-constant-face-name))))))
+
+      ;; Fontify all keywords except the primitive types.
+      ,(if (c-major-mode-is 'pike-mode)
+	   ;; No symbol is a keyword after "->" in Pike.
+	   `(,(concat "\\(\\=.?\\|[^>]\\|[^-]>\\)"
+		      "\\<" (c-lang-const c-regular-keywords-regexp))
+	     2 font-lock-keyword-face)
+	 `(,(concat "\\<" (c-lang-const c-regular-keywords-regexp))
+	   1 font-lock-keyword-face))
+
+      ;; Fontify leading identifiers in fully qualified names like
+      ;; "foo::bar" in languages that supports such things.
+      ,@(when (c-lang-const c-opt-identifier-concat-key)
+	  (if (c-major-mode-is 'vala-mode)
+	      ;; Vala needs special treatment since "." is used both to
+	      ;; qualify names and in normal indexing.  Here we look for
+	      ;; capital characters at the beginning of an identifier to
+	      ;; recognize the class.  "*" is also recognized to cover
+	      ;; wildcard import declarations.  All preceding dot separated
+	      ;; identifiers are taken as package names and therefore
+	      ;; fontified as references.
+	      `(,(c-make-font-lock-search-function
+		  ;; Search for class identifiers preceded by ".".  The
+		  ;; anchored matcher takes it from there.
+		  (concat (c-lang-const c-opt-identifier-concat-key)
+			  (c-lang-const c-simple-ws) "*"
+			  (concat "\\("
+				  "[" c-upper "]"
+				  "[" (c-lang-const c-symbol-chars) "]*"
+				  "\\|"
+				  "\\*"
+				  "\\)"))
+		  `((let (id-end)
+		      (goto-char (1+ (match-beginning 0)))
+		      (while (and (eq (char-before) ?.)
+				  (progn
+				    (backward-char)
+				    (c-backward-syntactic-ws)
+				    (setq id-end (point))
+				    (< (skip-chars-backward
+					,(c-lang-const c-symbol-chars))
+				       0))
+				  (not (get-text-property (point) 'face)))
+			(c-put-font-lock-face (point) id-end
+					      c-reference-face-name)
+			(c-backward-syntactic-ws)))
+		    nil
+		    (goto-char (match-end 0)))))
+
+	    `((,(byte-compile
+		 ;; Must use a function here since we match longer than
+		 ;; we want to move before doing a new search.  This is
+		 ;; not necessary for XEmacs since it restarts the
+		 ;; search from the end of the first highlighted
+		 ;; submatch (something that causes problems in other
+		 ;; places).
+		 `(lambda (limit)
+		    (while (re-search-forward
+			    ,(concat "\\(\\<" ; 1
+				     "\\(" (c-lang-const c-symbol-key) "\\)" ; 2
+				     (c-lang-const c-simple-ws) "*"
+				     (c-lang-const c-opt-identifier-concat-key)
+				     (c-lang-const c-simple-ws) "*"
+				     "\\)"
+				     "\\("
+				     (c-lang-const c-opt-after-id-concat-key)
+				     "\\)")
+			    limit t)
+		      (unless (progn
+				(goto-char (match-beginning 0))
+				(c-skip-comments-and-strings limit))
+			(or (get-text-property (match-beginning 2) 'face)
+			    (c-put-font-lock-face (match-beginning 2)
+						  (match-end 2)
+						  c-reference-face-name))
+			(goto-char (match-end 1))))))))))
+
+      ;; Fontify the special declarations in Objective-C.
+      ,@(when (c-major-mode-is 'objc-mode)
+	  `(;; Fontify class names in the beginning of message expressions.
+	    ,(c-make-font-lock-search-function
+	      "\\["
+	      '((c-fontify-types-and-refs ()
+		  (c-forward-syntactic-ws limit)
+		  (let ((start (point)))
+		    ;; In this case we accept both primitive and known types.
+		    (when (eq (c-forward-type) 'known)
+		      (goto-char start)
+		      (let ((c-promote-possible-types t))
+			(c-forward-type))))
+		  (if (> (point) limit) (goto-char limit)))))
+
+	    ;; The @interface/@implementation/@protocol directives.
+	    ,(c-make-font-lock-search-function
+	      (concat "\\<"
+		      (regexp-opt
+		       '("@interface" "@implementation" "@protocol")
+		       t)
+		      "\\>")
+	      '((c-fontify-types-and-refs
+		    (;; The font-lock package in Emacs is known to clobber
+		     ;; `parse-sexp-lookup-properties' (when it exists).
+		     (parse-sexp-lookup-properties
+		      (cc-eval-when-compile
+			(boundp 'parse-sexp-lookup-properties))))
+		  (c-forward-objc-directive)
+		  nil)
+		(goto-char (match-beginning 0))))))
+
+      (eval . (list "\\(!\\)[^=]" 1 c-negation-char-face-name))
+      ))
 
 ;; Vala type may be marked nullable and/or be array type
 (c-lang-defconst c-opt-type-suffix-key
   vala "\\(\\[[ \t\n\r\f\v]*\\]\\|[?*]\\)")
 
-;; Vala has a few rules that are slightly different than Java for
-;; operators. This also removed the Java's "super" and replaces it
-;; with the Vala's "base".
+;; Vala operators
 (c-lang-defconst c-operators
   vala `((prefix "base")))
 
 ;; Vala directives
 (c-lang-defconst c-opt-cpp-prefix
   vala "\\s *#\\s *")
-
 
 ;; Vala uses the following assignment operators
 (c-lang-defconst c-assignment-operators
@@ -212,15 +290,15 @@
 
 ;; The various modifiers used for class and method descriptions.
 (c-lang-defconst c-modifier-kwds
-  vala '("public" "partial" "private" "const" "abstract"
-	 "protected" "ref" "in" "out" "static" "virtual"
-	 "override" "params" "internal" "weak" "owned"
-	 "unowned" "async" "yield"))
+  vala '("public" "private" "const" "abstract"
+	 "protected" "static" "virtual"
+	 "override" "params" "internal" "async" "yield"))
 
-;; We don't use the protection level stuff because it breaks the
-;; method indenting. Not sure why, though.
-(c-lang-defconst c-protection-kwds
-  vala nil)
+;; Type modifiers that can be used other than in declarations.
+;; Omit "in", to stop it having an unfortunate effect when it is used in its
+;; other meaning, in an iteration. It doesn't seem to matter much.
+(c-lang-defconst c-type-modifier-prefix-kwds
+  vala '("ref" "out" "weak" "owned" "unowned"))
 
 ;; Define the keywords that can have something following after them.
 (c-lang-defconst c-type-list-kwds
@@ -277,29 +355,17 @@
 ;; Add a "virtual semicolon" after attributes, so that indentation
 ;; afterwards is not broken. Copied from
 ;; https://github.com/josteink/csharp-mode/ commit bd881cd
-(defun csharp-at-vsemi-p (&optional pos)
+(defun vala-at-vsemi-p (&optional pos)
   (if pos (goto-char pos))
-  (or (and
-       ;; Heuristics to find attributes
-       (eq (char-before) ?\])
-       (save-excursion
-         (c-backward-sexp)
-         (looking-at "\\[")))
-      (and
-       ;; Heuristics to find object initializers
-       (save-excursion
-         ;; Next non-whitespace character should be '{'
-         (c-forward-syntactic-ws)
-         (char-after ?{))
-       (save-excursion
-         ;; 'new' should be part of the line
-         (beginning-of-line)
-         (looking-at ".*new.*"))
-       ;; Line should not already be terminated
-       (not (eq (char-after) ?\;)))))
+  (and
+   ;; Heuristics to find attributes
+   (eq (char-before) ?\])
+   (save-excursion
+     (c-backward-sexp)
+     (looking-at "\\["))))
 
 (c-lang-defconst c-at-vsemi-p-fn
-  vala 'csharp-at-vsemi-p)
+  vala 'vala-at-vsemi-p)
 
 
 (defconst vala-font-lock-keywords-1 (c-lang-const c-matchers-1 vala)
