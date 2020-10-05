@@ -170,16 +170,13 @@
 (c-lang-defconst c-opt-type-suffix-key
   vala "\\(\\[[ \t\n\r\f\v]*\\]\\|[?*]\\)")
 
-;; Vala has a few rules that are slightly different than Java for
-;; operators. This also removed the Java's "super" and replaces it
-;; with the Vala's "base".
+;; Vala operators
 (c-lang-defconst c-operators
   vala `((prefix "base")))
 
 ;; Vala directives
 (c-lang-defconst c-opt-cpp-prefix
   vala "\\s *#\\s *")
-
 
 ;; Vala uses the following assignment operators
 (c-lang-defconst c-assignment-operators
