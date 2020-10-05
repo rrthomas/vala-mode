@@ -101,17 +101,11 @@
 
 (c-lang-defconst c-basic-matchers-before
   vala `(
-;;;; Font-lock the attributes by searching for the
-;;;; appropriate regex and marking it as TODO.
-	 ;;,`(,(concat "\\(" vala-attribute-regex "\\)")
-	 ;;   0 font-lock-function-name-face)	   
-
-	 ;; Put a warning face on the opener of unclosed strings that
-	 ;; can't span lines.  Later font
-	 ;; lock packages have a `font-lock-syntactic-face-function' for
-	 ;; this, but it doesn't give the control we want since any
-	 ;; fontification done inside the function will be
-	 ;; unconditionally overridden.
+	 ;; Put a warning face on the opener of unclosed strings that can't
+	 ;; span lines. Later font lock packages have a
+	 ;; `font-lock-syntactic-face-function' for this, but it doesn't
+	 ;; give the control we want since any fontification done inside the
+	 ;; function will be unconditionally overridden.
 	 ,(c-make-font-lock-search-function
 	   ;; Match a char before the string starter to make
 	   ;; `c-skip-comments-and-strings' work correctly.
@@ -387,9 +381,6 @@ Key bindings:
   (c-init-language-vars vala-mode)
   ;; `c-common-init' initializes most of the components of a CC Mode
   ;; buffer, including setup of the mode menu, font-lock, etc.
-  ;; There's also a lower level routine `c-basic-common-init' that
-  ;; only makes the necessary initialization to get the syntactic
-  ;; analysis and similar things working.
   (c-common-init 'vala-mode)
   (unless (assoc 'vala-mode c-default-style)
     (add-to-list 'c-default-style '(vala-mode . "vala")))
