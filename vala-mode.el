@@ -298,11 +298,6 @@ casts and declarations are fontified.  Used on level 2 and higher."
 (c-lang-defconst c-type-modifier-prefix-kwds
   vala '("ref" "in" "out" "weak" "owned" "unowned"))
 
-;; We don't use the protection level stuff because it breaks the
-;; method indenting. Not sure why, though.
-(c-lang-defconst c-protection-kwds
-  vala nil)
-
 ;; Define the keywords that can have something following after them.
 (c-lang-defconst c-type-list-kwds
   vala '("struct" "class" "interface" "is" "as"
