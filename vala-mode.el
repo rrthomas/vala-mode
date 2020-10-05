@@ -28,18 +28,7 @@
 ;;
 ;;    See http://live.gnome.org/Vala for details about Vala language.
 ;;
-;;    This is a separate mode to implement the Vala constructs and
-;;    font-locking. It is mostly the csharp-mode from
-;;    http://mfgames.com/linux/csharp-mode with vala specific keywords
-;;    and filename suffixes.
-;;
-;;    Note: The interface used in this file requires CC Mode 5.30 or
-;;    later.
-
-;;; Versions:
-;;
-;;	0.1	: Initial version based on csharp-mode
-;;
+;;    This mode was based on Dylan Moonfire's csharp-mode.
 
 ;; This is a copy of the function in cc-mode which is used to handle
 ;; the eval-when-compile which is needed during other times.
@@ -106,25 +95,17 @@
 ;; space in names, SomeClass) for class and package names, but
 ;; Camel-casing (initial lowercase, upper case in words,
 ;; i.e. someVariable) for variables.
-;;(error (byte-compile-dest-file))
-;;(error (c-get-current-file))
 (c-lang-defconst c-opt-after-id-concat-key
   vala (if (c-lang-const c-opt-identifier-concat-key)
 	   (c-lang-const c-symbol-start)))
 
 (c-lang-defconst c-basic-matchers-before
   vala `(
-;;;; Font-lock the attributes by searching for the
-;;;; appropriate regex and marking it as TODO.
-	 ;;,`(,(concat "\\(" vala-attribute-regex "\\)")
-	 ;;   0 font-lock-function-name-face)	   
-
-	 ;; Put a warning face on the opener of unclosed strings that
-	 ;; can't span lines.  Later font
-	 ;; lock packages have a `font-lock-syntactic-face-function' for
-	 ;; this, but it doesn't give the control we want since any
-	 ;; fontification done inside the function will be
-	 ;; unconditionally overridden.
+	 ;; Put a warning face on the opener of unclosed strings that can't
+	 ;; span lines. Later font lock packages have a
+	 ;; `font-lock-syntactic-face-function' for this, but it doesn't
+	 ;; give the control we want since any fontification done inside the
+	 ;; function will be unconditionally overridden.
 	 ,(c-make-font-lock-search-function
 	   ;; Match a char before the string starter to make
 	   ;; `c-skip-comments-and-strings' work correctly.
@@ -260,6 +241,10 @@
 (c-lang-defconst c-ref-list-kwds
   vala '("using" "namespace" "construct"))
 
+;; Keywords followed by a paren not containing type identifiers.
+(c-lang-defconst c-paren-nontype-kwds
+  vala '("requires" "ensuring"))
+
 ;; Follow-on blocks that don't require a brace
 (c-lang-defconst c-block-stmt-2-kwds
   vala '("for" "if" "switch" "while" "catch" "foreach" "lock"))
@@ -269,7 +254,6 @@
   vala '("return" "continue" "break" "throw"))
 
 ;; Statements that allow a label
-;; TODO?
 (c-lang-defconst c-before-label-kwds
   vala nil)
 
@@ -279,7 +263,7 @@
 
 ;; Keywords that start "primary expressions."
 (c-lang-defconst c-primary-expr-kwds
-  vala '("this" "base"))
+  vala '("this" "base" "result"))
 
 ;; We need to treat namespace as an outer block to class indenting
 ;; works properly.
@@ -290,15 +274,33 @@
 (c-lang-defconst c-other-kwds
   vala '("in" "sizeof" "typeof"))
 
-(require 'cc-awk)
+;; Add a "virtual semicolon" after attributes, so that indentation
+;; afterwards is not broken. Copied from
+;; https://github.com/josteink/csharp-mode/ commit bd881cd
+(defun csharp-at-vsemi-p (&optional pos)
+  (if pos (goto-char pos))
+  (or (and
+       ;; Heuristics to find attributes
+       (eq (char-before) ?\])
+       (save-excursion
+         (c-backward-sexp)
+         (looking-at "\\[")))
+      (and
+       ;; Heuristics to find object initializers
+       (save-excursion
+         ;; Next non-whitespace character should be '{'
+         (c-forward-syntactic-ws)
+         (char-after ?{))
+       (save-excursion
+         ;; 'new' should be part of the line
+         (beginning-of-line)
+         (looking-at ".*new.*"))
+       ;; Line should not already be terminated
+       (not (eq (char-after) ?\;)))))
 
 (c-lang-defconst c-at-vsemi-p-fn
-  vala 'c-awk-at-vsemi-p)
+  vala 'csharp-at-vsemi-p)
 
-
-;; (defcustom vala-font-lock-extra-types nil
-;;   "*List of extra types (aside from the type keywords) to recognize in Vala mode.
-;; Each list item should be a regexp matching a single identifier.")
 
 (defconst vala-font-lock-keywords-1 (c-lang-const c-matchers-1 vala)
   "Minimal highlighting for Vala mode.")
@@ -336,21 +338,16 @@
 			map)
   "Keymap used in vala-mode buffers.")
 
-;;(easy-menu-define vala-menu vala-mode-map "Vala Mode Commands"
-;;		  ;; Can use `vala' as the language for `c-mode-menu'
-;;		  ;; since its definition covers any language.  In
-;;		  ;; this case the language is used to adapt to the
-;;		  ;; nonexistence of a cpp pass and thus removing some
-;;		  ;; irrelevant menu alternatives.
-;;		  (cons "Vala" (c-lang-const c-mode-menu vala)))
-
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vala\\'" . vala-mode))
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vapi\\'" . vala-mode))
 ;;;###autoload
-(unless (assoc 'vala-mode c-default-style)
-  (add-to-list 'c-default-style '(vala-mode . "linux")))
+(c-add-style "vala"
+             '("linux"
+               (c-comment-only-line-offset 0 . 0)
+               (c-offsets-alist
+                (func-decl-cont . ++))))
 
 ;; Custom variables
 (defcustom vala-mode-hook nil
@@ -362,9 +359,7 @@
 ;;;###autoload
 (defun vala-mode ()
   "Major mode for editing Vala code.
-This is a simple example of a separate mode derived from CC Mode
-to support a language with syntax similar to
-C#/C/C++/ObjC/Java/IDL/Pike.
+Based on CC Mode.
 
 The hook `c-mode-common-hook' is run with no args at mode
 initialization, then `vala-mode-hook'.
@@ -386,11 +381,9 @@ Key bindings:
   (c-init-language-vars vala-mode)
   ;; `c-common-init' initializes most of the components of a CC Mode
   ;; buffer, including setup of the mode menu, font-lock, etc.
-  ;; There's also a lower level routine `c-basic-common-init' that
-  ;; only makes the necessary initialization to get the syntactic
-  ;; analysis and similar things working.
   (c-common-init 'vala-mode)
-  ;;(easy-menu-add vala-menu)
+  (unless (assoc 'vala-mode c-default-style)
+    (add-to-list 'c-default-style '(vala-mode . "vala")))
   (setq indent-tabs-mode t)
   (setq c-basic-offset 4)
   (setq tab-width 4)
