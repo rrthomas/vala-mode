@@ -101,8 +101,6 @@
 ;; space in names, SomeClass) for class and package names, but
 ;; Camel-casing (initial lowercase, upper case in words,
 ;; i.e. someVariable) for variables.
-;;(error (byte-compile-dest-file))
-;;(error (c-get-current-file))
 (c-lang-defconst c-opt-after-id-concat-key
   vala (if (c-lang-const c-opt-identifier-concat-key)
 	   (c-lang-const c-symbol-start)))
@@ -316,10 +314,6 @@
   vala 'csharp-at-vsemi-p)
 
 
-;; (defcustom vala-font-lock-extra-types nil
-;;   "*List of extra types (aside from the type keywords) to recognize in Vala mode.
-;; Each list item should be a regexp matching a single identifier.")
-
 (defconst vala-font-lock-keywords-1 (c-lang-const c-matchers-1 vala)
   "Minimal highlighting for Vala mode.")
 
@@ -355,14 +349,6 @@
 			;; Add bindings which are only useful for Vala
 			map)
   "Keymap used in vala-mode buffers.")
-
-;;(easy-menu-define vala-menu vala-mode-map "Vala Mode Commands"
-;;		  ;; Can use `vala' as the language for `c-mode-menu'
-;;		  ;; since its definition covers any language.  In
-;;		  ;; this case the language is used to adapt to the
-;;		  ;; nonexistence of a cpp pass and thus removing some
-;;		  ;; irrelevant menu alternatives.
-;;		  (cons "Vala" (c-lang-const c-mode-menu vala)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.vala\\'" . vala-mode))
@@ -415,7 +401,6 @@ Key bindings:
   (c-common-init 'vala-mode)
   (unless (assoc 'vala-mode c-default-style)
     (add-to-list 'c-default-style '(vala-mode . "vala")))
-  ;;(easy-menu-add vala-menu)
   (setq indent-tabs-mode t)
   (setq c-basic-offset 4)
   (setq tab-width 4)
