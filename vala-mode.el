@@ -362,7 +362,8 @@ casts and declarations are fontified.  Used on level 2 and higher."
    (eq (char-before) ?\])
    (save-excursion
      (c-backward-sexp)
-     (looking-at "\\["))))
+     (looking-at "\\["))
+   (not (eq (char-after) ?\;))))
 
 (c-lang-defconst c-at-vsemi-p-fn
   vala 'vala-at-vsemi-p)
