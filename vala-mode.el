@@ -295,8 +295,6 @@ casts and declarations are fontified.  Used on level 2 and higher."
 	 "override" "params" "internal" "async" "yield"))
 
 ;; Type modifiers that can be used other than in declarations.
-;; Omit "in", to stop it having an unfortunate effect when it is used in its
-;; other meaning, in an iteration. It doesn't seem to matter much.
 (c-lang-defconst c-type-modifier-prefix-kwds
   vala '("ref" "out" "weak" "owned" "unowned"))
 
