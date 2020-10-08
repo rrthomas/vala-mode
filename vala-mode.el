@@ -277,7 +277,7 @@ casts and declarations are fontified.  Used on level 2 and higher."
 
 ;; Type modifier keywords which can appear in front of a type.
 (c-lang-defconst c-type-modifier-prefix-kwds
-  vala '("const"))
+  vala '("const" "dynamic"))
 
 ;; Type modifier keywords. They appear anywhere in types, but modifiy
 ;; instead create one.
@@ -301,7 +301,7 @@ casts and declarations are fontified.  Used on level 2 and higher."
 ;; Define the keywords that can have something following after them.
 (c-lang-defconst c-type-list-kwds
   vala '("struct" "class" "interface" "is" "as"
-	 "delegate" "event" "set" "get"
+	 "delegate" "event" "set" "get" "value"
 	 "callback" "signal" "var" "default"))
 
 ;; This allows the classes after the : in the class declaration to be
@@ -319,11 +319,11 @@ casts and declarations are fontified.  Used on level 2 and higher."
 
 ;; Keywords followed by a paren not containing type identifiers.
 (c-lang-defconst c-paren-nontype-kwds
-  vala '("requires" "ensuring"))
+  vala '("requires" "ensures"))
 
 ;; Follow-on blocks that don't require a brace
 (c-lang-defconst c-block-stmt-2-kwds
-  vala '("for" "if" "switch" "while" "catch" "foreach" "lock"))
+  vala '("for" "if" "switch" "while" "catch" "foreach" "lock" "unlock" "with"))
 
 ;; Statements that break out of braces
 (c-lang-defconst c-simple-stmt-kwds
@@ -339,7 +339,7 @@ casts and declarations are fontified.  Used on level 2 and higher."
 
 ;; Keywords that start "primary expressions."
 (c-lang-defconst c-primary-expr-kwds
-  vala '("this" "base" "result"))
+  vala '("this" "base" "result" "global"))
 
 ;; We need to treat namespace as an outer block to class indenting
 ;; works properly.
