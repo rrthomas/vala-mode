@@ -259,6 +259,14 @@ casts and declarations are fontified.  Used on level 2 and higher."
 (c-lang-defconst c-opt-cpp-prefix
   vala "\\s *#\\s *")
 
+;; Support multiline strings
+;;
+;; FIXME: This allows any string to be multiline. Currently, c-mode only
+;; supports a single-character prefix to denote a multiline string, so the
+;; real fix will be harder.
+(c-lang-defconst c-multiline-string-start-char
+  vala t)
+
 ;; Vala uses the following assignment operators
 (c-lang-defconst c-assignment-operators
   vala '("=" "*=" "/=" "%=" "+=" "-=" ">>=" "<<="
