@@ -265,7 +265,7 @@ casts and declarations are fontified.  Used on level 2 and higher."
 ;; supports a single-character prefix to denote a multiline string, so the
 ;; real fix will be harder.
 (c-lang-defconst c-multiline-string-start-char
-  vala t)
+  vala vala-multiline-strings)
 
 ;; Vala uses the following assignment operators
 (c-lang-defconst c-assignment-operators
@@ -427,6 +427,15 @@ casts and declarations are fontified.  Used on level 2 and higher."
   "*Hook called by `vala-mode'."
   :type 'hook
   :group 'c)
+
+(defcustom vala-multiline-strings nil
+  "Whether to enable support for multiline strings.
+
+It can conflict with some other Emacs functionality, such as the
+automatic insertion of closing quotes `electric-pair-mode'."
+  :type 'bool
+  :group 'vala)
+
 
 ;;; The entry point into the mode
 ;;;###autoload
