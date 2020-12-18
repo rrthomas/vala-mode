@@ -471,8 +471,8 @@ Key bindings:
   (setq tab-width 4)
   (c-toggle-auto-newline -1)
   (c-toggle-hungry-state -1)
-  (run-hooks 'c-mode-common-hook)
-  (run-hooks 'vala-mode-hook)
+  (run-mode-hooks 'c-mode-common-hook
+		  'vala-mode-hook)
   (c-update-modeline))
 
 (provide 'vala-mode)
