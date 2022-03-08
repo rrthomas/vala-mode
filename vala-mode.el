@@ -349,11 +349,6 @@ casts and declarations are fontified.  Used on level 2 and higher."
 (c-lang-defconst c-primary-expr-kwds
   vala '("this" "base" "result" "global"))
 
-;; We need to treat namespace as an outer block to class indenting
-;; works properly.
-(c-lang-defconst c-other-block-decl-kwds
-  vala '("namespace" "extern"))
-
 ;; We need to include the "in" for the foreach
 (c-lang-defconst c-other-kwds
   vala '("in" "sizeof" "typeof"))
